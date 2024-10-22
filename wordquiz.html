@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隨機選擇題</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .question-container {
+            margin: 20px;
+        }
+        .answers {
+            list-style-type: none;
+            padding: 0;
+        }
+        .answers li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="question-container">
+        <h1 style="font-size: 2em; color: #4CAF50; text-align: center; margin-bottom: 20px;">隨機選擇題</h1>
+        <div id="question" style="font-size: 1.5em; margin-bottom: 20px; text-align: center;"></div>
+        <ul id="answers" class="answers"></ul>
+        <div id="result" style="font-size: 1.2em; margin-top: 20px; color: green; text-align: center;"></div>
+    </div>
+
+    <script>
+        let data = [];
+        fetch('word5000.csv')
+            .then(response => response.text())
+            .then(csvText => {
+            data = csvText.split('\n').map(line => {
+                const [question, answer] = line.split(',');
+                return { question, answer };
+            });
+            loadQuestion();
+            })
+            .catch(error => console.error('Error loading CSV:', error));
+
+        let completed = [];
+
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * max);
+        }
+
+        function loadQuestion() {
+            const availableData = data.filter((_, index) => !completed.includes(index));
+            if (availableData.length === 0) {
+                document.getElementById('question').innerText = "所有問題已完成！";
+                document.getElementById('answers').innerHTML = "";
+                return;
+            }
+
+            const randomIndex = getRandomInt(availableData.length);
+            const questionData = availableData[randomIndex];
+            const questionIndex = data.indexOf(questionData);
+
+            document.getElementById('question').innerText = questionData.question;
+
+            const answers = [questionData.answer];
+            while (answers.length < 4) {
+                const randomAnswer = data[getRandomInt(data.length)].answer;
+                if (!answers.includes(randomAnswer)) {
+                    answers.push(randomAnswer);
+                }
+            }
+
+            answers.sort(() => Math.random() - 0.5);
+
+            const answersList = document.getElementById('answers');
+            answersList.innerHTML = "";
+            answers.forEach(answer => {
+                const li = document.createElement('li');
+                const button = document.createElement('button');
+                button.innerText = answer;
+                button.onclick = () => checkAnswer(answer, questionData.answer, questionIndex);
+                li.appendChild(button);
+                answersList.appendChild(li);
+            });
+        }
+
+        function checkAnswer(selectedAnswer, correctAnswer, questionIndex) {
+            const result = document.getElementById('result');
+            if (selectedAnswer === correctAnswer) {
+                result.innerText = "答對了！";
+                completed.push(questionIndex);
+            } else {
+                result.innerText = "答錯了！";
+            }
+            setTimeout(() => {
+                result.innerText = "";
+                loadQuestion();
+            }, 1000);
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>
