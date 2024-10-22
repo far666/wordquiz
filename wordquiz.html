@@ -18,6 +18,25 @@
         .answers li {
             margin: 5px 0;
         }
+        .answers button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1em;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .answers button:hover {
+            background-color: #45a049;
+        }
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -25,23 +44,39 @@
         <h1 style="font-size: 2em; color: #4CAF50; text-align: center; margin-bottom: 20px;">隨機選擇題</h1>
         <div id="question" style="font-size: 1.5em; margin-bottom: 20px; text-align: center;"></div>
         <ul id="answers" class="answers"></ul>
-        <div id="result" style="font-size: 1.2em; margin-top: 20px; color: green; text-align: center;"></div>
+        <div id="result" style="font-size: 1.2em; margin-top: 20px; text-align: center;"></div>
+        <div id="score" style="font-size: 1.2em; margin-top: 20px; text-align: center;">
+            答對: <span id="correct" style="color: green;">0</span> / 答錯: <span id="incorrect" style="color: red;">0</span>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="resetScores()" style="background-color: #f44336; color: white; border: none; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 1em; margin: 4px 2px; cursor: pointer; border-radius: 5px; transition: background-color 0.3s ease;">
+            重置
+            </button>
+        </div>
+        <script>
+        </script>
     </div>
 
     <script>
         let data = [];
+        let correctCount = parseInt(localStorage.getItem('correctCount')) || 0;
+        let incorrectCount = parseInt(localStorage.getItem('incorrectCount')) || 0;
+        document.addEventListener('DOMContentLoaded', () => {
+            updateScore();
+        });
         fetch('word5000.csv')
             .then(response => response.text())
             .then(csvText => {
-            data = csvText.split('\n').map(line => {
-                const [question, answer] = line.split(',');
-                return { question, answer };
-            });
-            loadQuestion();
+                data = csvText.split('\n').map(line => {
+                    const [question, answer, type] = line.split(',');
+                    return { question, answer, type };
+                });
+                loadQuestion();
             })
             .catch(error => console.error('Error loading CSV:', error));
 
         let completed = [];
+        completed = JSON.parse(localStorage.getItem('completed')) || [];
 
         function getRandomInt(max) {
             return Math.floor(Math.random() * max);
@@ -64,7 +99,7 @@
             const answers = [questionData.answer];
             while (answers.length < 4) {
                 const randomAnswer = data[getRandomInt(data.length)].answer;
-                if (!answers.includes(randomAnswer)) {
+                if (!answers.includes(randomAnswer) && data[getRandomInt(data.length)].type === questionData.type) {
                     answers.push(randomAnswer);
                 }
             }
@@ -73,31 +108,69 @@
 
             const answersList = document.getElementById('answers');
             answersList.innerHTML = "";
-            answers.forEach(answer => {
-                const li = document.createElement('li');
+            answers.forEach((answer, index) => {
+                if (index % 2 === 0) {
+                    const row = document.createElement('div');
+                    row.className = 'answer-row';
+                    answersList.appendChild(row);
+                }
                 const button = document.createElement('button');
                 button.innerText = answer;
                 button.onclick = () => checkAnswer(answer, questionData.answer, questionIndex);
+                const li = document.createElement('li');
+                li.style.display = 'inline-block';
+                li.style.width = '45%';
+                li.style.textAlign = 'center';
                 li.appendChild(button);
-                answersList.appendChild(li);
+                answersList.lastChild.appendChild(li);
             });
         }
 
         function checkAnswer(selectedAnswer, correctAnswer, questionIndex) {
             const result = document.getElementById('result');
+            if (!data[questionIndex].incorrectCount) {
+                data[questionIndex].incorrectCount = 0;
+            }
+            if (selectedAnswer !== correctAnswer) {
+                data[questionIndex].incorrectCount++;
+            }
             if (selectedAnswer === correctAnswer) {
                 result.innerText = "答對了！";
+                result.style.color = "green";
                 completed.push(questionIndex);
+                localStorage.setItem('completed', JSON.stringify(completed));
+                correctCount++;
+                localStorage.setItem('correctCount', correctCount);
             } else {
                 result.innerText = "答錯了！";
+                result.style.color = "red";
+                incorrectCount++;
+                localStorage.setItem('incorrectCount', incorrectCount);
             }
+            updateScore();
             setTimeout(() => {
                 result.innerText = "";
                 loadQuestion();
             }, 1000);
         }
 
+        function updateScore() {
+            document.getElementById('correct').innerText = correctCount;
+            document.getElementById('incorrect').innerText = incorrectCount;
+        }
+
         loadQuestion();
+        
+        function resetScores() {
+            localStorage.removeItem('correctCount');
+            localStorage.removeItem('incorrectCount');
+            localStorage.removeItem('completed');
+            correctCount = 0;
+            incorrectCount = 0;
+            completed = [];
+            updateScore();
+            loadQuestion();
+        }
     </script>
 </body>
 </html>
