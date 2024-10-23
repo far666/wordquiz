@@ -53,8 +53,12 @@
             重置
             </button>
         </div>
-        <script>
-        </script>
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="toggleIncorrectWords()" style="background-color: #ff9800; color: white; border: none; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 1em; margin: 4px 2px; cursor: pointer; border-radius: 5px; transition: background-color 0.3s ease;">
+                顯示答錯單字
+            </button>
+        </div>
+        <div id="incorrect-words" style="font-size: 1.2em; margin-top: 20px; text-align: center;"></div></div>
     </div>
 
     <script>
@@ -77,6 +81,7 @@
 
         let completed = [];
         completed = JSON.parse(localStorage.getItem('completed')) || [];
+        incorrectWords = JSON.parse(localStorage.getItem('incorrectWords')) || [];
 
         function getRandomInt(max) {
             return Math.floor(Math.random() * max);
@@ -128,12 +133,10 @@
 
         function checkAnswer(selectedAnswer, correctAnswer, questionIndex) {
             const result = document.getElementById('result');
-            if (!data[questionIndex].incorrectCount) {
-                data[questionIndex].incorrectCount = 0;
-            }
-            if (selectedAnswer !== correctAnswer) {
-                data[questionIndex].incorrectCount++;
-            }
+            const questionData = data[questionIndex];
+
+            questionData.incorrectCount = questionData.incorrectCount || 0;
+
             if (selectedAnswer === correctAnswer) {
                 result.innerText = "答對了！";
                 result.style.color = "green";
@@ -144,9 +147,17 @@
             } else {
                 result.innerText = "答錯了！";
                 result.style.color = "red";
+                questionData.incorrectCount++;
                 incorrectCount++;
                 localStorage.setItem('incorrectCount', incorrectCount);
+
+                if (!incorrectWords[questionIndex]) {
+                    incorrectWords[questionIndex] = 0;
+                }
+                incorrectWords[questionIndex]++;
+                localStorage.setItem('incorrectWords', JSON.stringify(incorrectWords));
             }
+
             updateScore();
             setTimeout(() => {
                 result.innerText = "";
@@ -165,11 +176,28 @@
             localStorage.removeItem('correctCount');
             localStorage.removeItem('incorrectCount');
             localStorage.removeItem('completed');
+            localStorage.removeItem('incorrectWords');
             correctCount = 0;
             incorrectCount = 0;
             completed = [];
             updateScore();
             loadQuestion();
+        }
+        let showIncorrect = false;
+
+        function toggleIncorrectWords() {
+            showIncorrect = !showIncorrect;
+            const incorrectWordsDiv = document.getElementById('incorrect-words');
+            incorrectWordsDiv.innerHTML = '';
+            if (showIncorrect) {
+            incorrectWords.forEach((count, index) => {
+                if (count > 0) {
+                const wordDiv = document.createElement('div');
+                wordDiv.innerText = `${data[index].question} - ${data[index].answer} (錯誤次數: ${count})`;
+                incorrectWordsDiv.appendChild(wordDiv);
+                }
+            });
+            }
         }
     </script>
 </body>
