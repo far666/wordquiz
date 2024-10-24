@@ -103,9 +103,9 @@
 
             const answers = [questionData.answer];
             while (answers.length < 4) {
-                const randomAnswer = data[getRandomInt(data.length)].answer;
-                if (!answers.includes(randomAnswer) && data[getRandomInt(data.length)].type === questionData.type) {
-                    answers.push(randomAnswer);
+                const randomAnswerData = data[getRandomInt(data.length)];
+                if (!answers.includes(randomAnswerData.answer) && randomAnswerData.type === questionData.type) {
+                    answers.push(randomAnswerData.answer);
                 }
             }
 
